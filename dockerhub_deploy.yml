@@ -1,0 +1,47 @@
+---
+- name: Setup Docker and run container on Ansible worker (Amazon Linux 2)
+  hosts: demo
+  become: yes
+  user: ansible
+  connection: ssh
+  tasks:
+    - name: Copy the Docker installation script to worker
+      copy:
+        src: ./docker_install.sh  
+        dest: /tmp/docker_install.sh
+        mode: '0755'
+
+    - name: Execute the Docker installation script
+      command: /bin/bash /tmp/docker_install.sh
+
+    - name: Add user to a group
+      user:
+        name: ansible  
+        groups: docker  
+        append: yes
+
+    - name: Stop existing container if present using docker command
+      command: docker stop webapp
+      ignore_errors: yes
+
+    - name: Remove existing container if present using docker command
+      command: docker rm webapp
+      ignore_errors: yes
+    
+    - name: Remove existing image if present using docker command
+      command: docker rmi suchithk/tomcat:v1
+      ignore_errors: yes
+
+    - name: Pull Docker image using docker command
+      command: docker pull suchithk/tomcat:v1
+
+    - name: Run Docker container using docker command
+      command: docker run -d -p 8080:8080 --name webapp suchithk/tomcat:v1
+
+    - name: Check Docker container status using docker command
+      command: docker ps -a
+      register: container_status
+
+    - name: Show container status 
+      debug:
+        var: container_status.stdout
